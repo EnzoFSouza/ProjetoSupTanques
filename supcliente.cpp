@@ -35,15 +35,16 @@ SupCliente::~SupCliente()
   {
     // Envia o comando de logout para o servidor
     /* ACRESCENTAR */
-    sock.write_int16(CMD_LOGOUT_USER);
+    sock.write_int16(CMD_LOGOUT);
     // Espera 1 segundo para dar tempo ao servidor de ler a msg de LOGOUT
     // antes de fechar o socket
     /* ACRESCENTAR */
-    this_thread::sleep_for(chrono::seconds(1));
+    std::this_thread::sleep_for(chrono::seconds(1));
     // Fecha o socket e, consequentemente, deve
     // encerrar a thread de leitura de dados do socket
     /* ACRESCENTAR */
     sock.close();
+    ///Divergencia/// encerrarCliente = true;
   }
 
   // Aguarda pelo fim da thread de recepcao
@@ -61,10 +62,6 @@ void SupCliente::conectar(const std::string& IP,
                           const std::string& Login,
                           const std::string& Senha)
 {
-  //Precisa adicionar as linhas 65 e 66?? Nao estavam no codigo original
-  // Resultado das operacoes com socket
-  mysocket_status iResult;
-
   // Comando recebido
   uint16_t cmd;
 
@@ -76,8 +73,7 @@ void SupCliente::conectar(const std::string& IP,
     // Conecta o socket
     // Em caso de erro, throw 102
     /* ACRESCENTAR */
-    iResult = sock.connect(IP, SUP_PORT);
-    if (iResult != mysocket_status::SOCK_OK) throw 102;
+    if (sock.connect(IP, SUP_PORT); != mysocket_status::SOCK_OK) throw 102;
 
     // Envia o comando CMD_LOGIN.
     // Nao precisa bloquear o mutex para garantir exclusao mutua
@@ -85,25 +81,23 @@ void SupCliente::conectar(const std::string& IP,
     // Entao, essa funcao eh a unica enviando dados pelo socket.
     // Em caso de erro, throw 103
     /* ACRESCENTAR */
-    iResult = sock.write_int16(CMD_LOGIN);
-    if (iResult != mysocket_status::SOCK_OK) throw 103;
+    if (sock.write_uint16(CMD_LOGIN); != mysocket_status::SOCK_OK) throw 103;
 
     // Envia 1o parametro do comando (login)
     // Em caso de erro, throw 104
     /* ACRESCENTAR */
-    iResult = sock.write_string(Login);
-    if (iResult != mysocket_status::SOCK_OK) throw 104;
+    if (sock.write_string(Login) != mysocket_status::SOCK_OK) throw 104;
 
     // Envia 2o parametro do comando (senha)
     // Em caso de erro, throw 105
     /* ACRESCENTAR */
-    iResult = sock.write_string(Senha);
-    if (iResult != mysocket_status::SOCK_OK) throw 105;
+    if (sock.write_string(Senha) != mysocket_status::SOCK_OK) throw 105;
 
     // Leh a resposta (cmd) do servidor ao pedido de conexao
     // Em caso de erro, throw 106
     /* ACRESCENTAR */
-    iResult = sock.read_int16(cmd,1000*SUP_TIMEOUT);
+    if (sock.read_uint16(cmd,1000*SUP_TIMEOUT) != mysocket_status::SOCK_OK) throw 106;
+
     // Se a resposta nao for CMD_ADMIN_OK ou CMD_OK, throw 107
     if (cmd!=CMD_ADMIN_OK && cmd!=CMD_OK) throw 107;
 
@@ -156,7 +150,7 @@ void SupCliente::desconectar()
   {
     // Envia o comando de logout para o servidor
     /* ACRESCENTAR */
-    sock.write_int16(CMD_LOGOUT);
+    sock.write_uint16(CMD_LOGOUT);
 
     // Espera 1 segundo para dar tempo ao servidor de ler a msg de LOGOUT
     // antes de fechar o socket
@@ -185,9 +179,6 @@ void SupCliente::desconectar()
 /// como sendo aberta (Open==true) ou fechada (Open==false)
 void SupCliente::setValvOpen(bool isV1, bool Open)
 {
-  //Precisa add essa linha? Nao estava no codigo original
-  mysocket_status iResult;
-
   // Comando enviado/recebido
   uint16_t cmd = (isV1 ? CMD_SET_V1 : CMD_SET_V2);
 
@@ -205,20 +196,19 @@ void SupCliente::setValvOpen(bool isV1, bool Open)
     // Escreve o comando CMD_SET_V1 ou CMD_SET_V2
     // Em caso de erro, throw 202
     /* ACRESCENTAR */
-    iResult = sock.write_int16(cmd);
-    if (iResult != mysocket_status::SOCK_OK) throw 202;
+    if (sock.write_uint16(cmd) != mysocket_status::SOCK_OK) throw 202;
 
     // Escreve o parametro do comando (==0 se fechada !=0 se aberta)
     // Em caso de erro, throw 203
     /* ACRESCENTAR */
-    iResult = sock.write_int16(Open));
-    if (iResult != mysocket_status::SOCK_OK) throw 203;
+    ///Divergencia sock.write_uint16(Open ? 1 : 0);
+    if (sock.write_uint16(Open ? 1 : 0)) != mysocket_status::SOCK_OK) throw 203;
 
     // Leh a resposta (cmd) do servidor ao comando
     // Em caso de erro, throw 204
     /* ACRESCENTAR */
-    iResult = sock.read_int16(cmd);
-    if (iResult != mysocket_status::SOCK_OK) throw 204;
+    ///Divergencia sock.read_uint16(cmd, SUP_TIMEOUT*1000);
+    if (sock.read_uint16(cmd) != mysocket_status::SOCK_OK) throw 204;
     // Se resposta nao for CMD_OK, throw 205
     if (cmd != CMD_OK) throw 205;
   }
@@ -259,6 +249,7 @@ void SupCliente::setPumpInput(uint16_t Input)
   // de comandos que ficam aguardando resposta, para evitar que a resposta
   // de um comando seja recebida por outro comando em outra thread.
   /* ACRESCENTAR */
+  mtx.lock();
 
   try
   {
@@ -268,14 +259,19 @@ void SupCliente::setPumpInput(uint16_t Input)
     // Escreve o comando CMD_SET_PUMP
     // Em caso de erro, throw 302
     /* ACRESCENTAR */
+    if (sock.write_uint16(CMD_SET_PUMP) != mysocket_status::SOCK_OK) throw 302;
 
     // Escreve o paramentro do comando CMD_SET_PUMP (Input = 0 a 65535)
     // Em caso de erro, throw 303
     /* ACRESCENTAR */
+    if (sock.write_uint16(Input) != mysocket_status::SOCK_OK) throw 303;
 
     // Leh a resposta do servidor ao comando
     // Em caso de erro, throw 304
     /* ACRESCENTAR */
+    ///Divergencia timeout
+    if (sock.read_uint16(cmd) != mysocket_status::SOCK_OK) throw 304;
+
     // Se resposta nao for CMD_OK, throw 305
     if (cmd != CMD_OK) throw 305;
   }
@@ -283,6 +279,7 @@ void SupCliente::setPumpInput(uint16_t Input)
   {
     // Libera o mutex para sair da zona de exclusao mutua.
     /* ACRESCENTAR */
+    mtx.unlock();
 
     // Msg de erro para debug
     msg_err = "Erro na atuacao sobre a bomba: "+ std::to_string(err);
@@ -294,6 +291,7 @@ void SupCliente::setPumpInput(uint16_t Input)
 
   // Libera o mutex para sair da zona de exclusao mutua.
   /* ACRESCENTAR */
+  mtx.unlock();
 
   // Nao reexibe a interface com novo estado.
   // Serah reexibida quando chegar o proximo dado do servidor, que
@@ -339,24 +337,36 @@ void SupCliente::main_thread(void)
     // de comandos que ficam aguardando resposta, para evitar que a resposta
     // de um comando seja recebida por outro comando em outra thread.
     /* ACRESCENTAR */
+    mtx.lock();
 
     try
     {
       // Escreve o comando CMD_GET_DATA
       // Em caso de erro, throw 401
       /* ACRESCENTAR */
+      if (sock.write_uint16(CMD_GET_DATA) != mysocket_status::SOCK_OK) throw 401;
 
       // Leh a resposta do servidor ao pedido de dados (com timeout)
       // Em caso de erro, throw 402
       /* ACRESCENTAR */
+      if (sock.read_uint16(cmd, SUP_TIMEOUT*1000) != mysocket_status::SOCK_OK) throw 402
+
       // Se resposta nao for CMD_OK, throw 403
       if (cmd != CMD_DATA) throw 403;
       // Leh os dados (com timeout)
       // Em caso de erro, throw 404
       /* ACRESCENTAR */
+      if (sock.read_uint16(S.H1, SUP_TIMEOUT*1000) != mysocket_status::SOCK_OK) throw 404
+      if (sock.read_uint16(S.H2, SUP_TIMEOUT*1000) != mysocket_status::SOCK_OK) throw 404
+      if (sock.read_uint16(S.ovfl, SUP_TIMEOUT*1000) != mysocket_status::SOCK_OK) throw 404
+      if (sock.read_uint16(S.PumpFlow, SUP_TIMEOUT*1000) != mysocket_status::SOCK_OK) throw 404
+      if (sock.read_uint16(S.PumpInput, SUP_TIMEOUT*1000) != mysocket_status::SOCK_OK) throw 404
+      if (sock.read_uint16(S.V1, SUP_TIMEOUT*1000) != mysocket_status::SOCK_OK) throw 404
+      if (sock.read_uint16(S.V2, SUP_TIMEOUT*1000) != mysocket_status::SOCK_OK) throw 404
 
       // Libera o mutex para sair da zona de exclusao mutua
       /* ACRESCENTAR */
+      mtx.unlock();
 
       // Armazena os dados
       storeState(S);
@@ -365,11 +375,14 @@ void SupCliente::main_thread(void)
 
       // Espera "timeRefresh" segundos
       /* ACRESCENTAR */
+      std::this_thread::sleep_for(chrono::seconds(timeRefresh));
+
     }
     catch(int err)
     {
       // Libera o mutex para sair da zona de exclusao mutua
       /* ACRESCENTAR */
+      mtx.unlock();
 
       // Nao pode chamar "desconectar" pq "desconectar" faz join na thread.
       // Como esta funcao main_thread eh executada na thread,
@@ -380,11 +393,15 @@ void SupCliente::main_thread(void)
       {
         // Envia o comando de logout para o servidor
         /* ACRESCENTAR */
+        sock.write_uint16(CMD_LOGOUT);
         // Espera 1 segundo para dar tempo ao servidor de ler a msg de LOGOUT
         // antes de fechar o socket
         /* ACRESCENTAR */
+        std::this_thread::sleep_for(chrono::seconds(1));
+
         // Fecha o socket
         /* ACRESCENTAR */
+        sock.close();
       }
 
       // Testa se o usuario desconectou na interface.
