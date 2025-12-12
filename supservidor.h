@@ -1,13 +1,13 @@
 #ifndef _SUP_SERVIDOR_H_
 #define _SUP_SERVIDOR_H_
 
-/* ACRESCENTAR */
 #include <string>
 #include <list>
-#include "tanques.h"
-#include "supdados.h"
 #include <thread>
 #include <mutex>
+#include <cstdlib>
+#include "tanques.h"
+#include "supdados.h"
 #include "../MySocket/MySocket/mysocket.h"
 
 /// A classe que implementa o servidor do sistema de tanques
@@ -22,7 +22,6 @@ private:
     std::string password; // Senha
     bool isAdmin;         // Pode alterar (true) ou soh consultar (false) o sistema
     // Socket de comunicacao
-    /*ACRESCENTAR*/
     tcp_mysocket sock;
 
     // Construtor default
@@ -30,15 +29,14 @@ private:
       :login(Login)
       ,password(Senha)
       ,isAdmin(Admin)
-      /*ACRESCENTAR*/
       ,sock()
     {}
     // Comparacao com string (testa se a string eh igual ao login)
     bool operator==(const std::string& S) const {return login==S;}
     // Usuario estah conectado ou nao?
-    inline bool isConnected() const {return /*MODIFICAR*/ sock.connected();}
+    inline bool isConnected() const {return sock.connected();}
     // Desconecta usuario
-    inline void close() {/*ACRESCENTAR*/ sock.close();}
+    inline void close() {sock.close();}
   };
 
 public:
@@ -78,10 +76,8 @@ private:
   // Lista de usuarios do servidor
   std::list<User> LU;
   // Identificador da thread do servidor
-  /*ACRESCENTAR*/
   std::thread thr_server;
   // Socket de conexoes
-  /*ACRESCENTAR*/
   tcp_mysocket_server sock_server;
 
   // Leitura do estado dos tanques a partir dos sensores

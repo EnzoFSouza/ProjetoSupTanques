@@ -5,7 +5,6 @@
 #include <ctime>
 #include <cstdint>  /* uint16_t */
 #include "supdados.h"
-/* ACRESCENTAR */
 #include <thread>
 #include <mutex>
 #include "../MySocket/MySocket/mysocket.h"
