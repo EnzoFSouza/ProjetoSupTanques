@@ -10,7 +10,7 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class SupClienteQt; }
 QT_END_NAMESPACE
 
-class SupClienteQt : public QMainWindow, public SupCliente /* ACRESCENTAR */
+class SupClienteQt : public QMainWindow, public SupCliente
 {
   Q_OBJECT
 
@@ -33,9 +33,9 @@ private:
 
   // As funcoes virtuais de armazenamento de dados.
   // Armazena o ultimo estado atual da planta
-  void storeState(const SupState& lastS) override;
+  //void storeState(const SupState& lastS) override;
   // Limpa todos os estados armazenados da planta
-  void clearState() override;
+  //void clearState() override;
 
 
 signals:

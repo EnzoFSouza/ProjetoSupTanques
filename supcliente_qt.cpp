@@ -329,16 +329,17 @@ void SupClienteQt::slotExibirInterface()
 
       // Barra de status
       // Texto da mensagem varia se for administrador ou nao
-      QString msg = QString(" CONNECTED: ") + QString(/* MODIFICAR */meuUsuario) +
+      QString msg = QString(" CONNECTED: ") + QString::fromStdString(meuUsuario) +
           " (" + (ehAdministrador ? "admin" : "viewer") + ")";
       statusMsg->setText(msg);
     }
 
     // Exibe nos visualizadores o ultimo estado lido da planta.
-    showValves(SupState::V1, SupState::V2);
-    showPump(SupState::PumpInput);
-    showH(SupState::H1, SupState::H2, SupState::ovfl);
-    showFlow(SupState::PumpFlow);
+    const SupState& s = lastState();
+    showValves(s.V1, s.V2);
+    showPump(s.PumpInput);
+    showH(s.H1, s.H2, s.ovfl);
+    showFlow(s.PumpFlow);
 
     // Exibe a imagem
     image->drawImg();
