@@ -35,7 +35,7 @@ SupCliente::~SupCliente()
   if (isConnected())
   {
     // Envia o comando de logout para o servidor
-    sock.write_int16(CMD_LOGOUT);
+    sock.write_uint16(CMD_LOGOUT);
     // Espera 1 segundo para dar tempo ao servidor de ler a msg de LOGOUT
     // antes de fechar o socket
     std::this_thread::sleep_for(std::chrono::seconds(1));

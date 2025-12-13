@@ -37,9 +37,9 @@ SupServidor::~SupServidor()
 
   // Fecha todos os sockets dos clientes
   for (auto& U : LU) U.close();
+
   // Fecha o socket de conexoes
   sock_server.close();
-
 
   // Espera o fim da thread do servidor
   if (thr_server.joinable()) thr_server.join();
@@ -64,14 +64,12 @@ bool SupServidor::setServerOn()
   try
   {
     // Coloca o socket de conexoes em escuta
-    /*ACRESCENTAR*/
     mysocket_status iResult = sock_server.listen(SUP_PORT);
 
     // Em caso de erro, gera excecao
     if (iResult != mysocket_status::SOCK_OK) throw 1;
 
     // Lanca a thread do servidor que comunica com os clientes
-    /*ACRESCENTAR*/
     thr_server = std::thread( [this]()
     {
       this->thr_server_main();
@@ -88,7 +86,6 @@ bool SupServidor::setServerOn()
     server_on = false;
 
     // Fecha o socket do servidor
-    /*ACRESCENTAR*/
     sock_server.close();
 
     return false;
@@ -109,16 +106,14 @@ void SupServidor::setServerOff()
 
   // Fecha todos os sockets dos clientes
   for (auto& U : LU) U.close();
+
   // Fecha o socket de conexoes
-  /*ACRESCENTAR*/
   sock_server.close();
 
   // Espera pelo fim da thread do servidor
-  /*ACRESCENTAR*/
   if (thr_server.joinable()) thr_server.join();
 
   // Faz o identificador da thread apontar para thread vazia
-  /*ACRESCENTAR*/
   thr_server = std::thread();
 
   // Desliga os tanques
@@ -248,7 +243,7 @@ void SupServidor::thr_server_main(void)
 
             // Espera ateh que chegue dado em algum socket (com timeout)
             iResult = f.wait_read(SUP_TIMEOUT*1000);
-            if (iResult != mysocket_status::SOCK_OK) throw "fila de espera"; //Do mensageiro1cpp
+            //if (iResult != mysocket_status::SOCK_OK) throw "fila de espera"; //Do mensageiro1cpp
 
             // De acordo com o resultado da espera:
             switch (iResult){
@@ -301,6 +296,7 @@ void SupServidor::thr_server_main(void)
                                         if (iU->sock.write_uint16(S.V2) != mysocket_status::SOCK_OK) throw 3;
 
                                         //if(iResult != mysocket_status::SOCK_OK) throw 3;
+                                        break;
                                     }
                                     case CMD_SET_V1:{
                                         // Apenas admin pode alterar
@@ -368,18 +364,23 @@ void SupServidor::thr_server_main(void)
                                         iU->sock.write_uint16(CMD_ERROR);
                                         break;
                                 }//fim switch (cmd)
-                          // = Envia resposta (Como fazer essa parte)
                             } //Fim do if server on..
                         } //Fim do for
                     } //Fim do try para erros nos clientes
                     catch(int erro){
+                        if (iU != LU.end()) {
+                            iU->close();
+                            cerr << "Erro " << erro
+                                 << " na leitura de comando do cliente "
+                                 << iU->login << endl;
+                        }
                         // Desconecta o usuario
-                        iU->close();
-                        cerr << "Erro " << erro << " na leitura de comando do cliente " << iU->login << endl;
+                        //iU->close();
+                        //cerr << "Erro " << erro << " na leitura de comando do cliente " << iU->login << endl;
                     }
 
                     // Depois, testa se houve atividade no socket de conexao. Se sim:
-                    if (server_on && sock_server.connected() && f.had_activity(sock_server)){
+                    if (server_on && sock_server.accepting() && f.had_activity(sock_server)){
                         // Estabelece nova conexao em socket temporario
                         iResult = sock_server.accept(t);
                         if (iResult != mysocket_status::SOCK_OK) throw 3; // Erro grave: encerra o servidor
@@ -422,16 +423,12 @@ void SupServidor::thr_server_main(void)
                             iU2->sock.swap(t);
 
                             // Envia a confirmacao de conexao
-                            if (iU2->isAdmin){
-                              iResult = iU2->sock.write_uint16(CMD_ADMIN_OK);
-                            }
+                            if (iU2->isAdmin) iResult = iU2->sock.write_uint16(CMD_ADMIN_OK);
 
-                            else{
-                              iResult = iU2->sock.write_uint16(CMD_OK);
-                            }
+                            else iResult = iU2->sock.write_uint16(CMD_OK);
 
                             if (iResult != mysocket_status::SOCK_OK) throw 9;
-                        }
+                        } //fim try
                         catch (int erro){ //Erros na conexao de novo cliente
                             if (erro>=5 && erro<=8){
                                 // Comunicacao com socket temporario OK, login invalido
