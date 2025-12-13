@@ -42,6 +42,7 @@ SupCliente::~SupCliente()
     // Fecha o socket e, consequentemente, deve
     // encerrar a thread de leitura de dados do socket
     sock.close();
+    encerrarCliente = true;
     ///Divergencia/// encerrarCliente = true;
   }
 

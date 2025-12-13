@@ -368,15 +368,9 @@ void SupServidor::thr_server_main(void)
                         } //Fim do for
                     } //Fim do try para erros nos clientes
                     catch(int erro){
-                        if (iU != LU.end()) {
-                            iU->close();
-                            cerr << "Erro " << erro
-                                 << " na leitura de comando do cliente "
-                                 << iU->login << endl;
-                        }
-                        // Desconecta o usuario
-                        //iU->close();
-                        //cerr << "Erro " << erro << " na leitura de comando do cliente " << iU->login << endl;
+                        //Desconecta o usuario
+                        iU->close();
+                        cerr << "Erro " << erro << " na leitura de comando do cliente " << iU->login << endl;
                     }
 
                     // Depois, testa se houve atividade no socket de conexao. Se sim:
